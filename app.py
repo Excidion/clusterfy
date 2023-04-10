@@ -45,6 +45,8 @@ def load_playlists(user_id):
         playlist = spotify.playlist(playlist_id=playlist.id)
         for track in spotify.all_items(playlist.tracks):
             track = track.track
+            if track.id is None:
+                continue
             audio_features = spotify.track_audio_features(track.id)
             song = {
                 "playlist": playlist.name,
