@@ -94,7 +94,16 @@ def plot_songs(songs):
     songs["x"] = embedding[:, 0]
     songs["y"] = embedding[:, 1]
     songs["title"] = songs["song_interpret"] + " - " + songs["song_title"]
-    fig = px.scatter(songs, x="x", y="y", color="playlist", hover_name="title")
+    fig = px.scatter(
+        songs, 
+        x="x", 
+        y="y", 
+        color="playlist", 
+        hover_name="title",
+        labels={"x":"", "y":""}
+    )
+    fig.update_xaxes(tickvals=[])
+    fig.update_yaxes(tickvals=[])
     return fig
 
 def style_pyplot():
@@ -150,4 +159,4 @@ else:
             st.pyplot(plt.gcf())
             plt.close()
         with clust:
-            st.plotly_chart(plot_songs(songs))
+            st.plotly_chart(plot_songs(songs), use_container_width=True)
