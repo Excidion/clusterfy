@@ -16,6 +16,14 @@ import umap
 
 load_dotenv()
 
+st.set_page_config(
+    page_title="Clusterfy",
+    menu_items={
+        "About": "You can find the source code on GitHub at [Excidion/clusterfy](https://github.com/Excidion/clusterfy).",
+        "Report a Bug": "https://github.com/Excidion/clusterfy/issues",
+    }
+)
+
 
 @st.cache_resource
 def login():
@@ -121,7 +129,7 @@ A, B = st.columns(2)
 
 with A:
     user_id = st.text_input("User ID")
-    if st.button("Load profile"):
+    if st.button("Load profile", help="For every 10 songs this will take about 1 second."):
         st.session_state["user_id"] = user_id
 
 user_id = st.session_state.get("user_id")
