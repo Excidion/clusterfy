@@ -154,6 +154,13 @@ else:
             st.metric("Playlists", songs.playlist.nunique())
         with b:
             st.metric("Songs", len(songs))
+
+        # choose subset
+        playlists = songs["playlist"].unique()
+        playlists = st.multiselect("Select Playlists", playlists, playlists, help="Selecting all or none is equivalent.")
+        if len(playlists) > 0:
+            songs = songs.loc[songs["playlist"].isin(playlists)]
+
         # content
         dist, clust = st.tabs(["Distributions", "Clustering"])
         with dist:
