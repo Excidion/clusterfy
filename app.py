@@ -1,5 +1,5 @@
 import streamlit as st
-
+import json
 import tekore as tk
 from dotenv import load_dotenv
 import os
@@ -124,6 +124,10 @@ def style_pyplot():
     ax.patch.set_alpha(0)
 
 
+with open("audio_features.json", "r") as infile:
+    audio_features = json.load(infile)
+
+
 st.title("Clusterfy")
 A, B = st.columns(2)
 
@@ -166,10 +170,24 @@ else:
         with dist:
             x = st.selectbox(
                 "Dimension", 
-                songs.columns.difference(["playlist", "song_title", "song_interpret", "key", "mode", "time_signature"]),
+                songs.columns.difference(["playlist", "song_title", "song_interpret"]),
             )
+            audio_feature = audio_features.get(x)
+            infotext = audio_feature.get("description")
+            if infotext is not None:
+                st.info(infotext)
             hue = "playlist" if st.checkbox("Split by playlist") else None
-            sns.kdeplot(songs, x=x, hue=hue, common_norm=False)
+            if x in ["key", "mode", "time_signature"]:
+                sns.countplot(songs, x=x, hue=hue)
+            else:
+                unit = audio_feature.get("unit")
+                clip = (0,1) if unit == "%" else None
+                sns.kdeplot(songs, x=x, hue=hue, common_norm=False, clip=clip)
+                if unit == "%":
+                    plt.gca().set_xticklabels([f'{x:.0%}' for x in plt.gca().get_xticks()]) 
+                plt.xlabel(f"{x} [{unit}]")
+            plt.yticks([])
+            plt.ylabel("Number of songs")
             style_pyplot()
             st.pyplot(plt.gcf())
             plt.close()
