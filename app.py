@@ -176,17 +176,21 @@ else:
             audio_feature = audio_features.get(x)
             st.info(audio_feature.get("description"))
             hue = "playlist" if st.checkbox("Split by playlist") else None
-            if x in ["key", "mode", "time_signature"]:
+            if "value_map" in audio_feature.keys():
                 sns.countplot(songs, x=x, hue=hue)
-            else:
+                value_map = audio_feature.get("value_map")
+                plt.gca().set_xticklabels([value_map.get(str(l), l) for l in plt.gca().get_xticks()])
+                plt.ylabel("Number of songs")
+            elif "unit" in audio_feature.keys():
                 unit = audio_feature.get("unit")
                 clip = (0,1) if unit == "%" else None
                 sns.kdeplot(songs, x=x, hue=hue, common_norm=False, clip=clip)
                 if unit == "%":
                     plt.gca().set_xticklabels([f'{x:.0%}' for x in plt.gca().get_xticks()]) 
-                plt.xlabel(f"{x} [{unit}]")
-            plt.yticks([])
-            plt.ylabel("Number of songs")
+                else:
+                    plt.xlabel(f"{x} [{unit}]")
+                plt.yticks([])
+                plt.ylabel("Share of songs")
             style_pyplot()
             st.pyplot(plt.gcf())
             plt.close()
