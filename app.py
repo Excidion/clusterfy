@@ -62,6 +62,7 @@ def load_playlists(user_id):
                 "song_title": track.name,
                 "acousticness": audio_features.acousticness,
                 "danceability": audio_features.danceability,
+                "duration": audio_features.duration_ms / 1e3,
                 "energy": audio_features.energy,
                 "instrumentalness": audio_features.instrumentalness,
                 "key": audio_features.key,
@@ -173,9 +174,7 @@ else:
                 songs.columns.difference(["playlist", "song_title", "song_interpret"]),
             )
             audio_feature = audio_features.get(x)
-            infotext = audio_feature.get("description")
-            if infotext is not None:
-                st.info(infotext)
+            st.info(audio_feature.get("description"))
             hue = "playlist" if st.checkbox("Split by playlist") else None
             if x in ["key", "mode", "time_signature"]:
                 sns.countplot(songs, x=x, hue=hue)
