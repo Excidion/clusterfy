@@ -183,7 +183,13 @@ else:
                 plt.ylabel("Number of songs")
             elif "unit" in audio_feature.keys():
                 unit = audio_feature.get("unit")
-                clip = (0,1) if unit == "%" else None
+                match unit:
+                    case "%":
+                        clip = (0, 1)
+                    case "s":
+                        clip = (0, None) # no durations under 0 seconds
+                    case other:
+                        clip = None
                 sns.kdeplot(songs, x=x, hue=hue, common_norm=False, clip=clip)
                 if unit == "%":
                     plt.gca().set_xticklabels([f'{x:.0%}' for x in plt.gca().get_xticks()]) 
