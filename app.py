@@ -12,6 +12,7 @@ from sklearn.preprocessing import RobustScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 import umap
+from datetime import timedelta
 
 
 load_dotenv()
@@ -44,7 +45,7 @@ def load_profile(user_id):
     return user
 
 
-@st.cache_data
+@st.cache_data(ttl=timedelta(hours=1))
 def load_playlists(user_id):
     spotify = login()
     playlists = spotify.playlists(user_id)
