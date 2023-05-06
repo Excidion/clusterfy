@@ -104,17 +104,65 @@ def plot_songs(songs):
     songs["x"] = embedding[:, 0]
     songs["y"] = embedding[:, 1]
     songs["title"] = songs["song_interpret"] + " - " + songs["song_title"]
+    not_in_hover = ["x", "y", "playlist", "title","song_interpret", "song_title"]
+    hover_data = {col: not (col in not_in_hover) for col in songs.columns}
     fig = px.scatter(
         songs, 
         x="x", 
         y="y", 
         color="playlist", 
         hover_name="title",
-        labels={"x":"", "y":""}
+        labels={"x":"", "y":""},
+        hover_data=hover_data,
     )
-    fig.update_xaxes(tickvals=[])
-    fig.update_yaxes(tickvals=[])
+    fig.update_xaxes(tickvals=[], zeroline=False)
+    fig.update_yaxes(tickvals=[], zeroline=False)
+    fig.update_layout(
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="left",
+            x=0,
+            title=None,
+        ),
+        dragmode = "pan",
+    )
     return fig
+
+
+def plot_distribution(songs, audio_features, x, hue):
+    audio_feature = audio_features.get(x)
+    if "value_map" in audio_feature.keys():
+        sns.countplot(songs, x=x, hue=hue)
+        value_map = audio_feature.get("value_map")
+        plt.gca().set_xticklabels([value_map.get(str(l), l) for l in plt.gca().get_xticks()])
+        plt.ylabel("Number of songs")
+    elif "unit" in audio_feature.keys():
+        unit = audio_feature.get("unit")
+        match unit:
+            case "%":
+                clip = (0, 1)
+            case "s":
+                clip = (0, None) # no durations under 0 seconds
+            case other:
+                clip = None
+        sns.kdeplot(songs, x=x, hue=hue, common_norm=False, clip=clip)
+        if unit == "%":
+            plt.gca().set_xticklabels([f'{x:.0%}' for x in plt.gca().get_xticks()]) 
+        else:
+            plt.xlabel(f"{x} [{unit}]")
+        plt.yticks([])
+        plt.ylabel("Share of songs")
+
+    if hue is not None:
+        sns.move_legend(
+            plt.gca(), 
+            "lower center",
+            bbox_to_anchor=(.5, 1), ncol=3, title=None, frameon=False,
+        )
+    style_pyplot()
+    return plt.gcf()
 
 def style_pyplot():
     plt.style.use("dark_background")
@@ -168,8 +216,12 @@ else:
             songs = songs.loc[songs["playlist"].isin(playlists)]
 
         # content
-        dist, clust = st.tabs(["Distributions", "Clustering"])
+        dist, clust = st.tabs(["Dimensions", "Map of Songs"])
         with dist:
+            st.write(
+                "For each song in every playlist spotify calculates a set of values.",
+                "The following plots show how the values in each dimension are distributed.",
+            )
             x = st.selectbox(
                 "Dimension", 
                 songs.columns.difference(["playlist", "song_title", "song_interpret"]),
@@ -177,29 +229,17 @@ else:
             audio_feature = audio_features.get(x)
             st.info(audio_feature.get("description"))
             hue = "playlist" if st.checkbox("Split by playlist") else None
-            if "value_map" in audio_feature.keys():
-                sns.countplot(songs, x=x, hue=hue)
-                value_map = audio_feature.get("value_map")
-                plt.gca().set_xticklabels([value_map.get(str(l), l) for l in plt.gca().get_xticks()])
-                plt.ylabel("Number of songs")
-            elif "unit" in audio_feature.keys():
-                unit = audio_feature.get("unit")
-                match unit:
-                    case "%":
-                        clip = (0, 1)
-                    case "s":
-                        clip = (0, None) # no durations under 0 seconds
-                    case other:
-                        clip = None
-                sns.kdeplot(songs, x=x, hue=hue, common_norm=False, clip=clip)
-                if unit == "%":
-                    plt.gca().set_xticklabels([f'{x:.0%}' for x in plt.gca().get_xticks()]) 
-                else:
-                    plt.xlabel(f"{x} [{unit}]")
-                plt.yticks([])
-                plt.ylabel("Share of songs")
-            style_pyplot()
-            st.pyplot(plt.gcf())
+            st.pyplot(plot_distribution(songs, audio_features, x, hue))
             plt.close()
         with clust:
-            st.plotly_chart(plot_songs(songs), use_container_width=True)
+            st.write(
+                "This page shows the result of a machine learning algorithm.",
+                "The algorithm tries to identify groups of songs based on their values which you can see in the `Dimensions` tab.",
+                "The results are then plotted in this map.",
+            )
+            config = {
+                "selectZoom": False,
+                'scrollZoom': True,
+                "displayModeBar": False,
+            }
+            st.plotly_chart(plot_songs(songs), use_container_width=True, config=config)
