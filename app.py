@@ -82,7 +82,7 @@ def load_playlists(user_id):
 
 
 @st.cache_data
-def plot_songs(songs):
+def plot_songs(songs, dimensions=2):
     pipe = Pipeline(
         [
             (
@@ -95,7 +95,7 @@ def plot_songs(songs):
                 ),
             ),
             ("scaler", RobustScaler()),
-            ("umap", umap.UMAP(n_neighbors=30, random_state=42)),
+            ("umap", umap.UMAP(n_components=dimensions, n_neighbors=30, random_state=42)),
         ]
     )
     embedding = pipe.fit_transform(
@@ -103,18 +103,24 @@ def plot_songs(songs):
     )
     songs["x"] = embedding[:, 0]
     songs["y"] = embedding[:, 1]
+    if dimensions == 3:
+        songs["z"] = embedding[:, 2]
     songs["title"] = songs["song_interpret"] + " - " + songs["song_title"]
-    not_in_hover = ["x", "y", "playlist", "title","song_interpret", "song_title"]
+    not_in_hover = ["x", "y", "z", "playlist", "title","song_interpret", "song_title"]
     hover_data = {col: not (col in not_in_hover) for col in songs.columns}
-    fig = px.scatter(
-        songs, 
-        x="x", 
-        y="y", 
+    plot_args = dict(
         color="playlist", 
         hover_name="title",
-        labels={"x":"", "y":""},
+        labels={"x":"", "y":"",},
         hover_data=hover_data,
     )
+    if dimensions == 2:
+        fig = px.scatter(songs, x="x", y="y", **plot_args)
+    elif dimensions == 3:
+        plot_args["labels"]["z"] = ""
+        fig = px.scatter_3d(songs, x="x", y="y", z="z", **plot_args)
+    else:
+        raise ValueError(f"Parameter 'dimensions' has to be either 2 or 3.")
     fig.update_xaxes(tickvals=[], zeroline=False)
     fig.update_yaxes(tickvals=[], zeroline=False)
     fig.update_layout(
@@ -126,7 +132,7 @@ def plot_songs(songs):
             x=0,
             title=None,
         ),
-        dragmode = "pan",
+        dragmode = "pan" if dimensions == 2 else None,
     )
     return fig
 
@@ -242,4 +248,5 @@ else:
                 'scrollZoom': True,
                 "displayModeBar": False,
             }
-            st.plotly_chart(plot_songs(songs), use_container_width=True, config=config)
+            dims = st.radio("Map Type", [2, 3], horizontal=True, format_func=lambda x: f"{x}D")
+            st.plotly_chart(plot_songs(songs, dims), use_container_width=True, config=config)
