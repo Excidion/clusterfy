@@ -8,7 +8,7 @@ import plotly.express as px
 import seaborn as sns
 from matplotlib import pyplot as plt
 from time import sleep
-from sklearn.preprocessing import RobustScaler, OneHotEncoder
+from sklearn.preprocessing import RobustScaler, OneHotEncoder, LabelEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 import umap
@@ -95,11 +95,12 @@ def plot_songs(songs, dimensions=2):
                 ),
             ),
             ("scaler", RobustScaler()),
-            ("umap", umap.UMAP(n_components=dimensions, n_neighbors=30, random_state=42)),
+            ("umap", umap.UMAP(n_components=dimensions, random_state=42)),
         ]
     )
     embedding = pipe.fit_transform(
-        songs.drop(["playlist", "song_title", "song_interpret"], axis=1)
+        X = songs.drop(["playlist", "song_title", "song_interpret"], axis=1),
+        y = LabelEncoder().fit_transform(songs["playlist"]),
     )
     songs["x"] = embedding[:, 0]
     songs["y"] = embedding[:, 1]
