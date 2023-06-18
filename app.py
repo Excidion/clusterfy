@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 import umap
 from datetime import timedelta
+from statistics import median
 
 
 load_dotenv()
@@ -83,19 +84,12 @@ def load_playlists(user_id):
 
 @st.cache_data
 def plot_songs(songs, dimensions=2):
+    typical_playlist_size = songs.groupby("playlist").size().agg(median)
     pipe = Pipeline(
         [
-            (
-                "encoder",
-                ColumnTransformer(
-                    [
-                        ("cat", OneHotEncoder(), ["time_signature", "mode", "key"]),
-                    ],
-                    remainder="passthrough",
-                ),
-            ),
+            ("encoder", ColumnTransformer([("cat", OneHotEncoder(), ["time_signature", "mode", "key"])], remainder="passthrough")),
             ("scaler", RobustScaler()),
-            ("umap", umap.UMAP(n_components=dimensions, random_state=42)),
+            ("umap", umap.UMAP(n_components=dimensions, n_neighbors=round(typical_playlist_size/2), min_dist=0.75, random_state=42)),
         ]
     )
     embedding = pipe.fit_transform(
@@ -215,12 +209,6 @@ else:
             st.metric("Playlists", songs.playlist.nunique())
         with b:
             st.metric("Songs", len(songs))
-
-        # choose subset
-        playlists = songs["playlist"].unique()
-        playlists = st.multiselect("Select Playlists", playlists, playlists, help="Selecting all or none is equivalent.")
-        if len(playlists) > 0:
-            songs = songs.loc[songs["playlist"].isin(playlists)]
 
         # content
         dist, clust = st.tabs(["Dimensions", "Map of Songs"])
