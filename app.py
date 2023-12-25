@@ -102,7 +102,7 @@ def plot_songs(songs, dimensions=2):
         songs["z"] = embedding[:, 2]
     songs["title"] = songs["song_interpret"] + " - " + songs["song_title"]
     not_in_hover = ["x", "y", "z", "playlist", "title","song_interpret", "song_title"]
-    hover_data = {col: not (col in not_in_hover) for col in songs.columns}
+    hover_data = {col: (col not in not_in_hover) for col in songs.columns}
     plot_args = dict(
         color="playlist", 
         hover_name="title",
@@ -115,7 +115,7 @@ def plot_songs(songs, dimensions=2):
         plot_args["labels"]["z"] = ""
         fig = px.scatter_3d(songs, x="x", y="y", z="z", **plot_args)
     else:
-        raise ValueError(f"Parameter 'dimensions' has to be either 2 or 3.")
+        raise ValueError("Parameter 'dimensions' has to be either 2 or 3.")
     fig.update_xaxes(tickvals=[], zeroline=False)
     fig.update_yaxes(tickvals=[], zeroline=False)
     fig.update_layout(
@@ -137,7 +137,7 @@ def plot_distribution(songs, audio_features, x, hue):
     if "value_map" in audio_feature.keys():
         sns.countplot(songs, x=x, hue=hue)
         value_map = audio_feature.get("value_map")
-        plt.gca().set_xticklabels([value_map.get(str(l), l) for l in plt.gca().get_xticks()])
+        plt.gca().set_xticklabels([value_map.get(str(label), label) for label in plt.gca().get_xticks()])
         plt.ylabel("Number of songs")
     elif "unit" in audio_feature.keys():
         unit = audio_feature.get("unit")
@@ -146,7 +146,7 @@ def plot_distribution(songs, audio_features, x, hue):
                 clip = (0, 1)
             case "s":
                 clip = (0, None) # no durations under 0 seconds
-            case other:
+            case _:
                 clip = None
         sns.kdeplot(songs, x=x, hue=hue, common_norm=False, clip=clip)
         if unit == "%":
